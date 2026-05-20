@@ -3,13 +3,17 @@
   box-shadow: none;
   outline: none;
 
+  line-height: 24px;
+
   padding: 12px 8px 12px 12px;
   border: 1px solid var(--color-input-border);
   border-radius: 8px;
 
   color: var(--color-text);
   background: var(--color-input-background);
-  
+
+  width: 464px;
+  height: 48px;
 }
 
 .input:hover {
