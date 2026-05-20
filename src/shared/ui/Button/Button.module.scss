@@ -29,6 +29,6 @@
   background: var(--color-primary-hover);
 }
 
-.button:not(:disabled):focused {
-  background: var(--color-primary-focused);
+.button:not(:disabled):focus {
+  background: var(--color-primary-focus);
 }
