@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { authApi } from '../api/authApi';
 import type { ApiResponse } from '../api/authTypes';
 import { normalizePhone } from '../lib/phoneValidation';
@@ -12,14 +13,12 @@ type AuthActions = {
   resetError: () => void;
 };
 
-function getStoredToken() {
-  return window.localStorage.getItem('authToken');
-}
+type AuthStore = AuthState & AuthActions;
 
 const initialState: AuthState = {
   phone: null,
   retryDelay: null,
-  token: getStoredToken(),
+  token: null,
   user: null,
   status: 'idle',
   isLoading: false,
@@ -31,7 +30,7 @@ function getErrorMessage(error: unknown) {
     return error.message;
   }
 
-  return "Сервер вернул ошибку";
+  return 'Что-то пошло не так. Попробуйте еще раз.';
 }
 
 function assertSuccess(response: ApiResponse) {
@@ -40,90 +39,103 @@ function assertSuccess(response: ApiResponse) {
   }
 }
 
-export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
-  ...initialState,
+export const useAuthStore = create<AuthStore>()(
+  persist(
+    (set, get) => ({
+      ...initialState,
 
-  async requestOtp(phone) {
-    const normalizedPhone = normalizePhone(phone);
+      async requestOtp(phone) {
+        const normalizedPhone = normalizePhone(phone);
 
-    set({ isLoading: true, error: null });
+        set({ isLoading: true, error: null });
 
-    try {
-      const response = await authApi.requestOtp({ phone: normalizedPhone });
-      assertSuccess(response);
+        try {
+          const response = await authApi.requestOtp({ phone: normalizedPhone });
+          assertSuccess(response);
 
-      set({
-        phone: normalizedPhone,
-        retryDelay: response.retryDelay,
-        status: 'otpRequested',
+          set({
+            phone: normalizedPhone,
+            retryDelay: response.retryDelay,
+            status: 'otpRequested',
+            isLoading: false,
+          });
+
+          return response.retryDelay;
+        } catch (error) {
+          set({ error: getErrorMessage(error), isLoading: false });
+          throw error;
+        }
+      },
+
+      async signIn(code) {
+        const { phone } = get();
+
+        if (!phone) {
+          set({ error: 'Поле является обязательным' });
+          return;
+        }
+
+        set({ isLoading: true, error: null });
+
+        try {
+          const response = await authApi.signIn({ phone, code: Number(code) });
+          assertSuccess(response);
+
+          set({
+            token: response.token,
+            user: response.user,
+            status: 'authenticated',
+            isLoading: false,
+          });
+        } catch (error) {
+          set({ error: getErrorMessage(error), isLoading: false });
+          throw error;
+        }
+      },
+
+      async bootstrapSession() {
+        const { token } = get();
+
+        if (!token) {
+          return;
+        }
+
+        set({ isLoading: true, error: null });
+
+        try {
+          const response = await authApi.getSession(token);
+          assertSuccess(response);
+
+          set({
+            user: response.user,
+            status: 'authenticated',
+            isLoading: false,
+          });
+        } catch {
+          set({ ...initialState });
+        }
+      },
+
+      logout() {
+        set({ ...initialState });
+      },
+
+      resetError() {
+        set({ error: null });
+      },
+    }),
+    {
+      name: 'auth-storage',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        phone: state.phone,
+        retryDelay: state.retryDelay,
+        token: state.token,
+        user: state.user,
+        status: state.status,
         isLoading: false,
-      });
-
-      return response.retryDelay;
-    } catch (error) {
-      set({ error: getErrorMessage(error), isLoading: false });
-      throw error;
-    }
-  },
-
-  async signIn(code) {
-    const { phone } = get();
-
-    if (!phone) {
-      set({ error: 'Поле является обязательным' });
-      return;
-    }
-
-    set({ isLoading: true, error: null });
-
-    try {
-      const response = await authApi.signIn({ phone, code: Number(code) });
-      assertSuccess(response);
-      window.localStorage.setItem('authToken', response.token);
-
-      set({
-        token: response.token,
-        user: response.user,
-        status: 'authenticated',
-        isLoading: false,
-      });
-    } catch (error) {
-      set({ error: getErrorMessage(error), isLoading: false });
-      throw error;
-    }
-  },
-
-  async bootstrapSession() {
-    const token = get().token ?? getStoredToken();
-
-    if (get().status === 'authenticated' || !token) {
-      return;
-    }
-
-    set({ isLoading: true, error: null });
-
-    try {
-      const response = await authApi.getSession(token);
-      assertSuccess(response);
-
-      set({
-        token,
-        user: response.user,
-        status: 'authenticated',
-        isLoading: false,
-      });
-    } catch {
-      window.localStorage.removeItem('authToken');
-      set({ ...initialState, token: null });
-    }
-  },
-
-  logout() {
-    window.localStorage.removeItem('authToken');
-    set({ ...initialState, token: null });
-  },
-
-  resetError() {
-    set({ error: null });
-  },
-}));
+        error: null,
+      }),
+    },
+  ),
+);
