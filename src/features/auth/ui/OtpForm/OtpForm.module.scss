@@ -1,0 +1,58 @@
+.form {
+  display: grid;
+  width: 562px;
+  max-width: 100%;
+}
+
+.input {
+  margin-bottom: 24px;
+}
+
+.submitButton {
+  border-radius: 16px;
+  font-size: 20px;
+  margin-bottom: 40px;
+}
+
+.repeatActiveRow,
+.repeatTimerRow {
+  display: flex;
+  align-items: center;
+  width: 328px;
+  min-height: 56px;
+}
+
+.repeatActiveRow {
+  justify-content: center;
+}
+
+.repeatTimerRow {
+  justify-content: flex-start;
+}
+
+.repeatButton {
+  width: auto;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  color: var(--color-text-secondary);
+  background: transparent;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.repeatButton:not(:disabled):hover,
+.repeatButton:not(:disabled):focus {
+  color: var(--color-text-secondary);
+  background: transparent;
+}
+
+.repeatText {
+  margin: 0;
+  color: var(--color-text-quartenery);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  text-align: left;
+  pointer-events: none;
+}
