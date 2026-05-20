@@ -14,18 +14,18 @@
 
   --color-primary: #1975ff;
   --color-primary-hover: #0052cc;
-  --color-primary-focused: #1975ff;
+  --color-primary-focus: #1975ff;
   --color-primary-disabled: #cce0ff;
 
   --color-text: #141c24;
   --color-text-tertiary: #637083;
 
-  --color-input-border: #CED2DA;
-  --color-input-hover: #97A1AF;
-  --color-input-focused: #4C94FF;
+  --color-input-border: #ced2da;
+  --color-input-hover: #97a1af;
+  --color-input-focus: #4c94ff;
+  --color-input-background: white;
 
-
-  --color-error: #F64C4C;
+  --color-error: #f64c4c;
 }
 
 * {
